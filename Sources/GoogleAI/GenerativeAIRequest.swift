@@ -19,7 +19,7 @@ protocol GenerativeAIRequest: Encodable {
   associatedtype Response: Decodable
 
   var url: URL { get }
-
+  func getUrl(_ baseUrl:String?) -> URL;
   var options: RequestOptions { get }
 }
 

@@ -20,10 +20,13 @@ struct GenerativeAIService {
   private let apiKey: String
 
   private let urlSession: URLSession
-
-  init(apiKey: String, urlSession: URLSession) {
+    
+  private let baseUrl:String?
+    
+  init(apiKey: String, urlSession: URLSession, baseUrl: String? = nil) {
     self.apiKey = apiKey
     self.urlSession = urlSession
+    self.baseUrl = baseUrl
   }
 
   func loadRequest<T: GenerativeAIRequest>(request: T) async throws -> T.Response {
@@ -147,7 +150,7 @@ struct GenerativeAIService {
   // MARK: - Private Helpers
 
   private func urlRequest<T: GenerativeAIRequest>(request: T) throws -> URLRequest {
-    var urlRequest = URLRequest(url: request.url)
+    var urlRequest = URLRequest(url: request.getUrl(self.baseUrl))
     urlRequest.httpMethod = "POST"
     urlRequest.setValue(apiKey, forHTTPHeaderField: "x-goog-api-key")
     urlRequest.setValue("genai-swift/\(GenerativeAISwift.version)",

@@ -96,23 +96,12 @@ public final class GenerativeModel {
   public convenience init(name: String,
                           apiKey: String,
                           generationConfig: GenerationConfig? = nil,
-                          safetySettings: [SafetySetting]? = nil,
-                          tools: [Tool]? = nil,
-                          toolConfig: ToolConfig? = nil,
-                          systemInstruction: String...,
-                          requestOptions: RequestOptions = RequestOptions()) {
+                          safetySettings: [SafetySetting]? = nil) {
     self.init(
       name: name,
       apiKey: apiKey,
       generationConfig: generationConfig,
       safetySettings: safetySettings,
-      tools: tools,
-      toolConfig: toolConfig,
-      systemInstruction: ModelContent(
-        role: "system",
-        parts: systemInstruction.map { ModelContent.Part.text($0) }
-      ),
-      requestOptions: requestOptions,
       urlSession: .shared
     )
   }
@@ -126,9 +115,10 @@ public final class GenerativeModel {
        toolConfig: ToolConfig? = nil,
        systemInstruction: ModelContent? = nil,
        requestOptions: RequestOptions = RequestOptions(),
-       urlSession: URLSession) {
+       urlSession: URLSession,
+       baseUrl: String? = nil) {
     modelResourceName = GenerativeModel.modelResourceName(name: name)
-    generativeAIService = GenerativeAIService(apiKey: apiKey, urlSession: urlSession)
+    generativeAIService = GenerativeAIService(apiKey: apiKey, urlSession: urlSession, baseUrl: baseUrl)
     self.generationConfig = generationConfig
     self.safetySettings = safetySettings
     self.tools = tools
