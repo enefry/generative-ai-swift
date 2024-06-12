@@ -44,9 +44,9 @@ struct GenerativeAIService {
 
     // Verify the status code is 200
     guard response.statusCode == 200 else {
-      Logging.default.error("[GoogleGenerativeAI] The server responded with an error: \(response)")
+      Logging.network.error("[GoogleGenerativeAI] The server responded with an error: \(response)")
       if let responseString = String(data: data, encoding: .utf8) {
-        Logging.network.error("[GoogleGenerativeAI] Response payload: \(responseString)")
+        Logging.default.error("[GoogleGenerativeAI] Response payload: \(responseString)")
       }
 
       throw parseError(responseData: data)
@@ -92,14 +92,14 @@ struct GenerativeAIService {
 
         // Verify the status code is 200
         guard response.statusCode == 200 else {
-          Logging.default
+          Logging.network
             .error("[GoogleGenerativeAI] The server responded with an error: \(response)")
           var responseBody = ""
           for try await line in stream.lines {
             responseBody += line + "\n"
           }
 
-          Logging.network.error("[GoogleGenerativeAI] Response payload: \(responseBody)")
+          Logging.default.error("[GoogleGenerativeAI] Response payload: \(responseBody)")
           continuation.finish(throwing: parseError(responseBody: responseBody))
 
           return
@@ -159,10 +159,7 @@ struct GenerativeAIService {
     let encoder = JSONEncoder()
     encoder.keyEncodingStrategy = .convertToSnakeCase
     urlRequest.httpBody = try encoder.encode(request)
-
-    if let timeoutInterval = request.options.timeout {
-      urlRequest.timeoutInterval = timeoutInterval
-    }
+    urlRequest.timeoutInterval = request.options.timeout
 
     return urlRequest
   }

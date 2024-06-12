@@ -254,6 +254,40 @@ final class GenerativeModelTests: XCTestCase {
     XCTAssertEqual(response.functionCalls, [functionCall])
   }
 
+  func testGenerateContent_success_functionCall_parallelCalls() async throws {
+    MockURLProtocol
+      .requestHandler = try httpRequestHandler(
+        forResource: "unary-success-function-call-parallel-calls",
+        withExtension: "json"
+      )
+
+    let response = try await model.generateContent(testPrompt)
+
+    XCTAssertEqual(response.candidates.count, 1)
+    let candidate = try XCTUnwrap(response.candidates.first)
+    XCTAssertEqual(candidate.content.parts.count, 3)
+    let functionCalls = response.functionCalls
+    XCTAssertEqual(functionCalls.count, 3)
+  }
+
+  func testGenerateContent_success_functionCall_mixedContent() async throws {
+    MockURLProtocol
+      .requestHandler = try httpRequestHandler(
+        forResource: "unary-success-function-call-mixed-content",
+        withExtension: "json"
+      )
+
+    let response = try await model.generateContent(testPrompt)
+
+    XCTAssertEqual(response.candidates.count, 1)
+    let candidate = try XCTUnwrap(response.candidates.first)
+    XCTAssertEqual(candidate.content.parts.count, 4)
+    let functionCalls = response.functionCalls
+    XCTAssertEqual(functionCalls.count, 2)
+    let text = try XCTUnwrap(response.text)
+    XCTAssertEqual(text, "The sum of [1, 2, 3] is")
+  }
+
   func testGenerateContent_usageMetadata() async throws {
     MockURLProtocol
       .requestHandler = try httpRequestHandler(
@@ -571,6 +605,20 @@ final class GenerativeModelTests: XCTestCase {
       requestOptions: requestOptions,
       urlSession: urlSession
     )
+
+    let response = try await model.generateContent(testPrompt)
+
+    XCTAssertEqual(response.candidates.count, 1)
+  }
+
+  func testGenerateContent_requestOptions_defaultTimeout() async throws {
+    let expectedTimeout = 300.0 // Default in timeout in RequestOptions()
+    MockURLProtocol
+      .requestHandler = try httpRequestHandler(
+        forResource: "unary-success-basic-reply-short",
+        withExtension: "json",
+        timeout: expectedTimeout
+      )
 
     let response = try await model.generateContent(testPrompt)
 
@@ -933,6 +981,25 @@ final class GenerativeModelTests: XCTestCase {
     XCTAssertEqual(responses, 1)
   }
 
+  func testGenerateContentStream_requestOptions_defaultTimeout() async throws {
+    let expectedTimeout = 300.0 // Default in timeout in RequestOptions()
+    MockURLProtocol
+      .requestHandler = try httpRequestHandler(
+        forResource: "streaming-success-basic-reply-short",
+        withExtension: "txt",
+        timeout: expectedTimeout
+      )
+
+    var responses = 0
+    let stream = model.generateContentStream(testPrompt)
+    for try await content in stream {
+      XCTAssertNotNil(content.text)
+      responses += 1
+    }
+
+    XCTAssertEqual(responses, 1)
+  }
+
   // MARK: - Count Tokens
 
   func testCountTokens_succeeds() async throws {
@@ -979,6 +1046,20 @@ final class GenerativeModelTests: XCTestCase {
       requestOptions: requestOptions,
       urlSession: urlSession
     )
+
+    let response = try await model.countTokens(testPrompt)
+
+    XCTAssertEqual(response.totalTokens, 6)
+  }
+
+  func testCountTokens_requestOptions_defaultTimeout() async throws {
+    let expectedTimeout = 300.0
+    MockURLProtocol
+      .requestHandler = try httpRequestHandler(
+        forResource: "success-total-tokens",
+        withExtension: "json",
+        timeout: expectedTimeout
+      )
 
     let response = try await model.countTokens(testPrompt)
 
@@ -1033,8 +1114,8 @@ final class GenerativeModelTests: XCTestCase {
   private func httpRequestHandler(forResource name: String,
                                   withExtension ext: String,
                                   statusCode: Int = 200,
-                                  timeout: TimeInterval = URLRequest
-                                    .defaultTimeoutInterval()) throws -> ((URLRequest) throws -> (
+                                  timeout: TimeInterval = RequestOptions()
+                                    .timeout) throws -> ((URLRequest) throws -> (
     URLResponse,
     AsyncLineSequence<URL.AsyncBytes>?
   )) {
